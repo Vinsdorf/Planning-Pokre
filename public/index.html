@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planning Poker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ─── LANDING ─────────────────────────────────────────────────────────── -->
+  <div id="screen-landing" class="screen active">
+    <div class="landing-wrap">
+      <div class="landing-logo">
+        <span class="logo-icon">🃏</span>
+        <h1>Planning Poker</h1>
+        <p class="tagline">Agilní plánování pro váš tým</p>
+      </div>
+
+      <div class="landing-panels">
+        <!-- CREATE -->
+        <div class="panel">
+          <div class="panel-icon">✨</div>
+          <h2>Nová místnost</h2>
+          <p class="panel-desc">Vytvořte místnost a sdílejte kód s týmem</p>
+          <div class="form-group">
+            <label for="create-name">Vaše jméno</label>
+            <input id="create-name" type="text" placeholder="Např. Jan Novák" maxlength="30" autocomplete="off" />
+          </div>
+          <button id="create-btn" class="btn-primary btn-full">Vytvořit místnost</button>
+        </div>
+
+        <div class="panel-divider"><span>nebo</span></div>
+
+        <!-- JOIN -->
+        <div class="panel">
+          <div class="panel-icon">🚀</div>
+          <h2>Připojit se</h2>
+          <p class="panel-desc">Zadejte kód místnosti od vašeho týmu</p>
+          <div class="form-group">
+            <label for="join-name">Vaše jméno</label>
+            <input id="join-name" type="text" placeholder="Např. Jana Nováková" maxlength="30" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="join-code">Kód místnosti</label>
+            <input id="join-code" type="text" placeholder="Např. ABC123" maxlength="6" autocomplete="off"
+              style="text-transform:uppercase; letter-spacing:0.12em;" />
+          </div>
+          <button id="join-btn" class="btn-primary btn-full">Připojit se</button>
+        </div>
+      </div>
+
+      <p class="landing-footer">Fibonacci bodování · Až 20 hráčů · Pozorovací mód</p>
+    </div>
+  </div>
+
+  <!-- ─── GAME ─────────────────────────────────────────────────────────────── -->
+  <div id="screen-game" class="screen">
+
+    <header class="game-header">
+      <div class="header-logo">🃏 <span>Planning Poker</span></div>
+      <div class="header-room">
+        <span class="room-label">Místnost</span>
+        <button id="copy-code-btn" class="room-code-btn" title="Kliknutím zkopírujete kód">
+          <span id="room-code-display"></span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+          </svg>
+        </button>
+      </div>
+      <button id="leave-btn" class="btn-ghost">← Opustit</button>
+    </header>
+
+    <div class="game-layout">
+
+      <!-- LEFT SIDEBAR – players -->
+      <aside class="sidebar-left">
+        <div class="sidebar-section">
+          <div class="sidebar-title">
+            Hráči
+            <span id="player-count-badge" class="count-badge">0</span>
+          </div>
+          <ul id="player-list" class="player-list"></ul>
+        </div>
+
+        <div class="sidebar-section observer-section">
+          <label class="toggle-row" id="observer-label">
+            <span class="toggle-text">
+              <strong>Pozorovatel</strong>
+              <small>Vidíte výsledky, ale nehlasujete</small>
+            </span>
+            <span class="toggle-switch">
+              <input type="checkbox" id="observer-toggle" />
+              <span class="toggle-knob"></span>
+            </span>
+          </label>
+        </div>
+
+        <div class="sidebar-section history-section">
+          <div class="sidebar-title">Historie</div>
+          <div id="history-list" class="history-list">
+            <p class="empty-hint">Žádná kola zatím.</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN AREA -->
+      <main class="game-main">
+
+        <!-- Story input -->
+        <section class="section story-section" id="story-section">
+          <div class="section-header">
+            <span class="section-icon">📝</span>
+            <h2>Příběh / Úkol</h2>
+          </div>
+          <div class="story-input-row">
+            <input id="story-input" type="text" placeholder="Zadejte název aktuálního příběhu nebo úkolu…" maxlength="200" />
+            <button id="set-story-btn" class="btn-yellow">Nastavit</button>
+          </div>
+          <div id="current-story-display" class="current-story hidden"></div>
+        </section>
+
+        <!-- Vote status bar -->
+        <section class="section status-section">
+          <div class="status-row">
+            <span id="status-text" class="status-text">Vyberte kartu a hlasujte</span>
+            <span id="vote-tally" class="vote-tally"></span>
+          </div>
+          <div class="progress-track">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+        </section>
+
+        <!-- Cards -->
+        <section class="section cards-section" id="cards-section">
+          <div id="cards-container" class="cards-container">
+            <!-- Generated by JS -->
+          </div>
+          <p id="observer-hint" class="observer-hint-msg hidden">
+            👁 Jste v pozorovacím módu. Hlasování je uzamčeno.
+          </p>
+        </section>
+
+        <!-- Results (shown after reveal) -->
+        <section class="section results-section hidden" id="results-section">
+          <div class="section-header">
+            <span class="section-icon">📊</span>
+            <h2>Výsledky</h2>
+          </div>
+          <div id="results-votes-grid" class="results-votes-grid"></div>
+          <div class="stats-bar">
+            <div class="stat-chip">
+              <span class="stat-label">Průměr</span>
+              <span id="stat-avg" class="stat-val">–</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-label">Nejčastější</span>
+              <span id="stat-mode" class="stat-val">–</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-label">Rozsah</span>
+              <span id="stat-range" class="stat-val">–</span>
+            </div>
+            <div class="stat-chip" id="consensus-chip">
+              <span class="stat-label">Shoda</span>
+              <span id="stat-consensus" class="stat-val">–</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Action buttons -->
+        <section class="section actions-section">
+          <button id="reveal-btn" class="btn-action btn-primary-action">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+            Odhalit hlasy
+          </button>
+          <button id="reset-btn" class="btn-action btn-secondary-action hidden">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.32"/>
+            </svg>
+            Nové kolo
+          </button>
+        </section>
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- ─── TOAST ────────────────────────────────────────────────────────────── -->
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
