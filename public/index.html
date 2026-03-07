@@ -17,40 +17,35 @@
         <p class="tagline">Agilní plánování pro váš tým</p>
       </div>
 
-      <div class="landing-panels">
-        <!-- CREATE -->
-        <div class="panel">
-          <div class="panel-icon">✨</div>
-          <h2>Nová místnost</h2>
-          <p class="panel-desc">Vytvořte místnost a sdílejte kód s týmem</p>
-          <div class="form-group">
-            <label for="create-name">Vaše jméno</label>
-            <input id="create-name" type="text" placeholder="Např. Jan Novák" maxlength="30" autocomplete="off" />
-          </div>
-          <button id="create-btn" class="btn-primary btn-full">Vytvořit místnost</button>
+      <div class="panel">
+        <div class="form-group">
+          <label for="player-name">Vaše jméno</label>
+          <input id="player-name" type="text" placeholder="Např. Jan Novák" maxlength="30" autocomplete="off" />
         </div>
 
-        <div class="panel-divider"><span>nebo</span></div>
-
-        <!-- JOIN -->
-        <div class="panel">
-          <div class="panel-icon">🚀</div>
-          <h2>Připojit se</h2>
-          <p class="panel-desc">Zadejte kód místnosti od vašeho týmu</p>
-          <div class="form-group">
-            <label for="join-name">Vaše jméno</label>
-            <input id="join-name" type="text" placeholder="Např. Jana Nováková" maxlength="30" autocomplete="off" />
-          </div>
-          <div class="form-group">
-            <label for="join-code">Kód místnosti</label>
-            <input id="join-code" type="text" placeholder="Např. ABC123" maxlength="6" autocomplete="off"
-              style="text-transform:uppercase; letter-spacing:0.12em;" />
-          </div>
-          <button id="join-btn" class="btn-primary btn-full">Připojit se</button>
+        <div class="role-selector">
+          <label class="role-option" id="role-player">
+            <input type="radio" name="role" value="player" checked />
+            <span class="role-card">
+              <span class="role-icon">🎮</span>
+              <strong>Hráč</strong>
+              <small>Hlasujete kartami</small>
+            </span>
+          </label>
+          <label class="role-option" id="role-observer">
+            <input type="radio" name="role" value="observer" />
+            <span class="role-card">
+              <span class="role-icon">👁</span>
+              <strong>Pozorovatel</strong>
+              <small>Vidíte výsledky</small>
+            </span>
+          </label>
         </div>
+
+        <button id="join-btn" class="btn-primary btn-full">Vstoupit do hry</button>
       </div>
 
-      <p class="landing-footer">Fibonacci bodování · Až 20 hráčů · Pozorovací mód</p>
+      <p class="landing-footer">Fibonacci bodování · Až 20 hráčů · Sdílejte odkaz z prohlížeče</p>
     </div>
   </div>
 
@@ -59,16 +54,14 @@
 
     <header class="game-header">
       <div class="header-logo">🃏 <span>Planning Poker</span></div>
-      <div class="header-room">
-        <span class="room-label">Místnost</span>
-        <button id="copy-code-btn" class="room-code-btn" title="Kliknutím zkopírujete kód">
-          <span id="room-code-display"></span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-          </svg>
-        </button>
-      </div>
-      <button id="leave-btn" class="btn-ghost">← Opustit</button>
+      <button id="share-btn" class="btn-share" title="Zkopírovat odkaz pro sdílení">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        Sdílet odkaz
+      </button>
+      <button id="leave-btn" class="btn-ghost">← Odejít</button>
     </header>
 
     <div class="game-layout">
@@ -77,14 +70,14 @@
       <aside class="sidebar-left">
         <div class="sidebar-section">
           <div class="sidebar-title">
-            Hráči
+            Účastníci
             <span id="player-count-badge" class="count-badge">0</span>
           </div>
           <ul id="player-list" class="player-list"></ul>
         </div>
 
         <div class="sidebar-section observer-section">
-          <label class="toggle-row" id="observer-label">
+          <label class="toggle-row">
             <span class="toggle-text">
               <strong>Pozorovatel</strong>
               <small>Vidíte výsledky, ale nehlasujete</small>
@@ -108,7 +101,7 @@
       <main class="game-main">
 
         <!-- Story input -->
-        <section class="section story-section" id="story-section">
+        <section class="section story-section">
           <div class="section-header">
             <span class="section-icon">📝</span>
             <h2>Příběh / Úkol</h2>
@@ -132,10 +125,8 @@
         </section>
 
         <!-- Cards -->
-        <section class="section cards-section" id="cards-section">
-          <div id="cards-container" class="cards-container">
-            <!-- Generated by JS -->
-          </div>
+        <section class="section cards-section">
+          <div id="cards-container" class="cards-container"></div>
           <p id="observer-hint" class="observer-hint-msg hidden">
             👁 Jste v pozorovacím módu. Hlasování je uzamčeno.
           </p>
@@ -185,7 +176,6 @@
         </section>
 
       </main>
-
     </div>
   </div>
 

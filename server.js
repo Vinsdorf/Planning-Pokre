@@ -5,36 +5,26 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: '*' }
-});
+const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// In-memory room store
-const rooms = new Map();
+// ── Single global game room ───────────────────────────────────────────────────
+const room = {
+  story: '',
+  phase: 'voting',   // 'voting' | 'revealed'
+  players: [],
+  history: []
+};
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-
-function generateRoomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code;
-  do {
-    code = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  } while (rooms.has(code));
-  return code;
-}
-
-function serializeRoom(room) {
+function serialize() {
   return {
-    code: room.code,
     story: room.story,
-    phase: room.phase,   // 'voting' | 'revealed'
+    phase: room.phase,
     players: room.players.map(p => ({
       id: p.id,
       name: p.name,
       isObserver: p.isObserver,
-      isAdmin: p.isAdmin,
       hasVoted: p.vote !== null,
       vote: room.phase === 'revealed' ? p.vote : null
     })),
@@ -42,197 +32,126 @@ function serializeRoom(room) {
   };
 }
 
-function calcStats(players) {
-  const numericVotes = players
+function broadcast() {
+  io.emit('room-state', serialize());
+}
+
+function calcStats() {
+  const nums = room.players
     .filter(p => !p.isObserver && p.vote !== null && p.vote !== '?' && p.vote !== '☕')
     .map(p => Number(p.vote));
-
-  if (numericVotes.length === 0) return null;
-
-  const sum = numericVotes.reduce((a, b) => a + b, 0);
-  const avg = (sum / numericVotes.length).toFixed(1);
-  const min = Math.min(...numericVotes);
-  const max = Math.max(...numericVotes);
-  const freq = numericVotes.reduce((acc, v) => { acc[v] = (acc[v] || 0) + 1; return acc; }, {});
+  if (!nums.length) return null;
+  const sum = nums.reduce((a, b) => a + b, 0);
+  const avg = (sum / nums.length).toFixed(1);
+  const min = Math.min(...nums);
+  const max = Math.max(...nums);
+  const freq = nums.reduce((acc, v) => { acc[v] = (acc[v] || 0) + 1; return acc; }, {});
   const mode = Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
-  const consensus = numericVotes.every(v => v === numericVotes[0]);
-
+  const consensus = nums.every(v => v === nums[0]);
   return { avg, min, max, mode, consensus };
 }
 
-function broadcast(roomCode) {
-  const room = rooms.get(roomCode);
-  if (room) io.to(roomCode).emit('room-state', serializeRoom(room));
-}
-
-// ── socket events ─────────────────────────────────────────────────────────────
-
+// ── Socket events ─────────────────────────────────────────────────────────────
 io.on('connection', socket => {
 
-  // Create a new room
-  socket.on('create-room', ({ playerName }) => {
-    if (!playerName || !playerName.trim()) {
-      return socket.emit('error', { message: 'Zadejte prosím své jméno.' });
-    }
-    const code = generateRoomCode();
-    const room = {
-      code,
-      story: '',
-      phase: 'voting',
-      players: [{
-        id: socket.id,
-        name: playerName.trim().slice(0, 30),
-        isObserver: false,
-        isAdmin: true,
-        vote: null
-      }],
-      history: []
-    };
-    rooms.set(code, room);
-    socket.join(code);
-    socket.roomCode = code;
-    socket.emit('room-joined', { code, isAdmin: true });
-    broadcast(code);
-  });
+  // Join the game
+  socket.on('join', ({ playerName, asObserver }) => {
+    const name = (playerName || '').trim().slice(0, 30);
+    if (!name) return socket.emit('error', { message: 'Zadejte prosím své jméno.' });
 
-  // Join existing room
-  socket.on('join-room', ({ roomCode, playerName }) => {
-    const code = (roomCode || '').toUpperCase().trim();
-    if (!playerName || !playerName.trim()) {
-      return socket.emit('error', { message: 'Zadejte prosím své jméno.' });
-    }
-    const room = rooms.get(code);
-    if (!room) {
-      return socket.emit('error', { message: `Místnost „${code}" neexistuje.` });
-    }
-    const name = playerName.trim().slice(0, 30);
     if (room.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
       return socket.emit('error', { message: `Jméno „${name}" je již obsazeno.` });
     }
-    const activePlayers = room.players.filter(p => !p.isObserver).length;
-    if (activePlayers >= 20) {
-      return socket.emit('error', { message: 'Místnost je plná (max 20 hráčů).' });
+    if (!asObserver && room.players.filter(p => !p.isObserver).length >= 20) {
+      return socket.emit('error', { message: 'Hra je plná (max 20 hráčů). Připojte se jako pozorovatel.' });
     }
-    room.players.push({ id: socket.id, name, isObserver: false, isAdmin: false, vote: null });
-    socket.join(code);
-    socket.roomCode = code;
-    socket.emit('room-joined', { code, isAdmin: false });
-    broadcast(code);
+
+    room.players.push({ id: socket.id, name, isObserver: !!asObserver, vote: null });
+    socket.emit('joined');
+    broadcast();
   });
 
   // Vote
   socket.on('vote', ({ vote }) => {
-    const room = rooms.get(socket.roomCode);
-    if (!room || room.phase !== 'voting') return;
-    const player = room.players.find(p => p.id === socket.id);
-    if (!player || player.isObserver) return;
-    player.vote = vote;
-    broadcast(socket.roomCode);
+    if (room.phase !== 'voting') return;
+    const p = room.players.find(p => p.id === socket.id);
+    if (!p || p.isObserver) return;
+    p.vote = vote;
+    broadcast();
   });
 
   // Clear own vote
   socket.on('clear-vote', () => {
-    const room = rooms.get(socket.roomCode);
-    if (!room || room.phase !== 'voting') return;
-    const player = room.players.find(p => p.id === socket.id);
-    if (!player || player.isObserver) return;
-    player.vote = null;
-    broadcast(socket.roomCode);
+    if (room.phase !== 'voting') return;
+    const p = room.players.find(p => p.id === socket.id);
+    if (!p || p.isObserver) return;
+    p.vote = null;
+    broadcast();
   });
 
-  // Reveal votes (any non-observer player)
+  // Reveal votes (any non-observer)
   socket.on('reveal-votes', () => {
-    const room = rooms.get(socket.roomCode);
-    if (!room || room.phase === 'revealed') return;
-    const player = room.players.find(p => p.id === socket.id);
-    if (!player || player.isObserver) return;
+    if (room.phase === 'revealed') return;
+    const p = room.players.find(p => p.id === socket.id);
+    if (!p || p.isObserver) return;
 
     room.phase = 'revealed';
-    const stats = calcStats(room.players);
-
+    const stats = calcStats();
     if (stats) {
-      const voteEntries = room.players
-        .filter(p => !p.isObserver)
-        .map(p => ({ name: p.name, vote: p.vote }));
       room.history.push({
         id: Date.now(),
         story: room.story || '(bez názvu)',
-        votes: voteEntries,
         avg: stats.avg,
         min: stats.min,
         max: stats.max,
         mode: stats.mode,
         consensus: stats.consensus,
-        revealedBy: player.name,
         time: new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
       });
     }
-    broadcast(socket.roomCode);
+    broadcast();
   });
 
-  // Reset round (any non-observer player)
-  socket.on('reset-round', ({ newStory }) => {
-    const room = rooms.get(socket.roomCode);
-    if (!room) return;
-    const player = room.players.find(p => p.id === socket.id);
-    if (!player || player.isObserver) return;
+  // Reset round (any non-observer)
+  socket.on('reset-round', () => {
+    const p = room.players.find(p => p.id === socket.id);
+    if (!p || p.isObserver) return;
     room.phase = 'voting';
-    room.story = typeof newStory === 'string' ? newStory.trim().slice(0, 200) : '';
+    room.story = '';
     room.players.forEach(p => { p.vote = null; });
-    broadcast(socket.roomCode);
+    broadcast();
   });
 
-  // Set story title
+  // Set story
   socket.on('set-story', ({ story }) => {
-    const room = rooms.get(socket.roomCode);
-    if (!room) return;
     room.story = (story || '').trim().slice(0, 200);
-    broadcast(socket.roomCode);
+    broadcast();
   });
 
   // Toggle observer mode
   socket.on('toggle-observer', () => {
-    const room = rooms.get(socket.roomCode);
-    if (!room) return;
-    const player = room.players.find(p => p.id === socket.id);
-    if (!player) return;
-
-    // Can't toggle to active when room is full
-    if (player.isObserver) {
-      const activePlayers = room.players.filter(p => !p.isObserver).length;
-      if (activePlayers >= 20) {
-        return socket.emit('error', { message: 'Místnost je plná (max 20 hráčů).' });
-      }
+    const p = room.players.find(p => p.id === socket.id);
+    if (!p) return;
+    if (p.isObserver && room.players.filter(p => !p.isObserver).length >= 20) {
+      return socket.emit('error', { message: 'Hra je plná (max 20 hráčů).' });
     }
-    player.isObserver = !player.isObserver;
-    player.vote = null;
-    socket.emit('observer-toggled', { isObserver: player.isObserver });
-    broadcast(socket.roomCode);
+    p.isObserver = !p.isObserver;
+    p.vote = null;
+    socket.emit('observer-toggled', { isObserver: p.isObserver });
+    broadcast();
   });
 
   // Disconnect
   socket.on('disconnect', () => {
-    const room = rooms.get(socket.roomCode);
-    if (!room) return;
     const idx = room.players.findIndex(p => p.id === socket.id);
-    if (idx === -1) return;
-
-    const wasAdmin = room.players[idx].isAdmin;
-    room.players.splice(idx, 1);
-
-    if (room.players.length === 0) {
-      rooms.delete(socket.roomCode);
-      return;
+    if (idx !== -1) {
+      room.players.splice(idx, 1);
+      broadcast();
     }
-    if (wasAdmin) {
-      room.players[0].isAdmin = true;
-    }
-    broadcast(socket.roomCode);
   });
 });
 
-// ── start ─────────────────────────────────────────────────────────────────────
-
+// ── Start ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🃏 Planning Poker běží na http://localhost:${PORT}`);
