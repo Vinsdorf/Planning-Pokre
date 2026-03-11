@@ -67,15 +67,16 @@ function hideLanding() {
 let reconnectToastTimer;
 
 function initSocket() {
-  // Use WebSocket directly – skips the polling→WebSocket upgrade phase
-  // that can cause spurious disconnections in many environments.
-  state.socket = io({ transports: ['websocket'], reconnectionDelayMax: 5000 });
+  // WebSocket first for speed; polling as fallback for proxies/firewalls.
+  state.socket = io({ transports: ['websocket', 'polling'], reconnectionDelayMax: 5000 });
 
-  // Fires on initial connect AND after every successful reconnect
+  // Fires on initial connect AND after every successful reconnect.
+  // We use state.myName (set on first join attempt) as the signal to rejoin.
+  // Socket.io does NOT buffer events across reconnects, so we must re-emit
+  // 'join' manually whenever the socket reconnects.
   state.socket.on('connect', () => {
     clearTimeout(reconnectToastTimer);
-    if (state.inGame) {
-      // Rejoin transparently after reconnect – server removes us on disconnect
+    if (state.myName) {
       state.socket.emit('join', { playerName: state.myName, asObserver: state.isObserver });
     }
   });
@@ -337,7 +338,10 @@ function attachEvents() {
     const name = dom.playerName.value.trim();
     if (!name) { showToast('Zadejte své jméno', 'error'); return; }
     const asObserver = document.querySelector('input[name="role"]:checked').value === 'observer';
+    // Set BEFORE emit so the connect handler can re-send if the socket
+    // reconnects before the server acks the join.
     state.myName = name;
+    state.isObserver = asObserver;
     state.socket.emit('join', { playerName: name, asObserver });
   }
   dom.joinBtn.addEventListener('click', doJoin);
