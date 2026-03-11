@@ -2,7 +2,7 @@
    Planning Poker – Client
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const FIBONACCI_CARDS = ['1', '2', '3', '5', '8', '13', '?', '☕'];
+const FIBONACCI_CARDS = ['1', '2', '3', '5', '8', '13'];
 
 // ── State ────────────────────────────────────────────────────────────────────
 const state = {
@@ -10,7 +10,8 @@ const state = {
   myName: null,
   isObserver: false,
   selectedVote: null,
-  roomState: null
+  roomState: null,
+  inGame: false       // true after first successful join
 };
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
@@ -57,19 +58,31 @@ function showToast(msg, type = '') {
   toastTimer = setTimeout(() => { dom.toast.className = 'toast'; }, 3000);
 }
 
-// ── Screen switch ─────────────────────────────────────────────────────────────
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  $(`screen-${name}`).classList.add('active');
+// ── Overlay helpers ───────────────────────────────────────────────────────────
+function hideLanding() {
+  $('screen-landing').classList.add('hidden');
 }
 
 // ── Socket ────────────────────────────────────────────────────────────────────
+let reconnectToastTimer;
+
 function initSocket() {
-  state.socket = io();
+  state.socket = io({ reconnectionDelayMax: 5000 });
+
+  // Fires on initial connect AND after every successful reconnect
+  state.socket.on('connect', () => {
+    clearTimeout(reconnectToastTimer);
+    if (state.inGame) {
+      // Rejoin transparently after reconnect – server removes us on disconnect
+      state.socket.emit('join', { playerName: state.myName, asObserver: state.isObserver });
+    }
+  });
 
   state.socket.on('joined', () => {
-    showScreen('game');
-    showToast('Připojeno!', 'success');
+    const firstJoin = !state.inGame;
+    state.inGame = true;
+    hideLanding();
+    if (firstJoin) showToast('Připojeno!', 'success');
   });
 
   state.socket.on('room-state', roomState => {
@@ -89,7 +102,14 @@ function initSocket() {
   });
 
   state.socket.on('error', ({ message }) => showToast(message, 'error'));
-  state.socket.on('disconnect', () => showToast('Spojení přerušeno. Obnovte stránku.', 'error'));
+
+  // Don't show an error immediately – Socket.io reconnects automatically.
+  // Only show a hint after 3 s if still trying.
+  state.socket.on('disconnect', reason => {
+    if (reason === 'io client disconnect') return; // intentional leave
+    if (!state.inGame) return;
+    reconnectToastTimer = setTimeout(() => showToast('Obnovuji spojení…'), 3000);
+  });
 }
 
 // ── Cards ─────────────────────────────────────────────────────────────────────
