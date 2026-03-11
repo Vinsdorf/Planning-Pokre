@@ -63,9 +63,19 @@ io.on('connection', socket => {
     const name = (playerName || '').trim().slice(0, 30);
     if (!name) return socket.emit('error', { message: 'Zadejte prosím své jméno.' });
 
-    if (room.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-      return socket.emit('error', { message: `Jméno „${name}" je již obsazeno.` });
+    // If name already exists: update socket.id (handles reconnection & race condition).
+    // Race condition: client reconnects and sends join BEFORE server processes the old
+    // socket's disconnect event. By updating the id here, the later disconnect handler
+    // won't find the entry (id already changed) and won't remove the player.
+    const existing = room.players.find(p => p.name.toLowerCase() === name.toLowerCase());
+    if (existing) {
+      existing.id = socket.id;
+      existing.isObserver = !!asObserver;
+      socket.emit('joined');
+      broadcast();
+      return;
     }
+
     if (!asObserver && room.players.filter(p => !p.isObserver).length >= 20) {
       return socket.emit('error', { message: 'Hra je plná (max 20 hráčů). Připojte se jako pozorovatel.' });
     }

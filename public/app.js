@@ -67,7 +67,9 @@ function hideLanding() {
 let reconnectToastTimer;
 
 function initSocket() {
-  state.socket = io({ reconnectionDelayMax: 5000 });
+  // Use WebSocket directly – skips the polling→WebSocket upgrade phase
+  // that can cause spurious disconnections in many environments.
+  state.socket = io({ transports: ['websocket'], reconnectionDelayMax: 5000 });
 
   // Fires on initial connect AND after every successful reconnect
   state.socket.on('connect', () => {
@@ -101,7 +103,13 @@ function initSocket() {
     showToast(isObserver ? '👁 Jste nyní pozorovatel' : '✏️ Zpět do hlasování');
   });
 
-  state.socket.on('error', ({ message }) => showToast(message, 'error'));
+  state.socket.on('error', ({ message }) => {
+    showToast(message, 'error');
+    // If not yet in the game, make sure the landing is still visible
+    if (!state.inGame) {
+      $('screen-landing').classList.remove('hidden');
+    }
+  });
 
   // Don't show an error immediately – Socket.io reconnects automatically.
   // Only show a hint after 3 s if still trying.
