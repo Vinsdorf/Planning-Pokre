@@ -63,12 +63,31 @@ function hideLanding() {
   $('screen-landing').classList.add('hidden');
 }
 
+// ── Connection status (shown on landing) ──────────────────────────────────────
+function setConnStatus(state, text) {
+  // state: 'connecting' | 'ok' | 'error'
+  const el = $('conn-status');
+  el.className = `conn-status conn-${state}`;
+  $('conn-text').textContent = text;
+  dom.joinBtn.disabled = (state !== 'ok');
+}
+
 // ── Socket ────────────────────────────────────────────────────────────────────
 let reconnectToastTimer;
 
 function initSocket() {
+  // Guard: socket.io.js may fail to load (server not running, 404, etc.)
+  if (typeof io === 'undefined') {
+    setConnStatus('error', 'Nelze načíst server – spusťte: node server.js');
+    return;
+  }
+
   // WebSocket first for speed; polling as fallback for proxies/firewalls.
   state.socket = io({ transports: ['websocket', 'polling'], reconnectionDelayMax: 5000 });
+
+  state.socket.on('connect_error', () => {
+    setConnStatus('error', 'Server nedostupný – zkontrolujte že běží node server.js');
+  });
 
   // Fires on initial connect AND after every successful reconnect.
   // We use state.myName (set on first join attempt) as the signal to rejoin.
@@ -76,6 +95,7 @@ function initSocket() {
   // 'join' manually whenever the socket reconnects.
   state.socket.on('connect', () => {
     clearTimeout(reconnectToastTimer);
+    setConnStatus('ok', 'Připojeno');
     if (state.myName) {
       state.socket.emit('join', { playerName: state.myName, asObserver: state.isObserver });
     }
@@ -116,7 +136,10 @@ function initSocket() {
   // Only show a hint after 3 s if still trying.
   state.socket.on('disconnect', reason => {
     if (reason === 'io client disconnect') return; // intentional leave
-    if (!state.inGame) return;
+    if (!state.inGame) {
+      setConnStatus('connecting', 'Obnovuji spojení…');
+      return;
+    }
     reconnectToastTimer = setTimeout(() => showToast('Obnovuji spojení…'), 3000);
   });
 }
@@ -335,6 +358,10 @@ function renderActionButtons(room) {
 function attachEvents() {
   // Landing – join
   function doJoin() {
+    if (!state.socket?.connected) {
+      showToast('Čekám na připojení k serveru…', 'error');
+      return;
+    }
     const name = dom.playerName.value.trim();
     if (!name) { showToast('Zadejte své jméno', 'error'); return; }
     const asObserver = document.querySelector('input[name="role"]:checked').value === 'observer';
