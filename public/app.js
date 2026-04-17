@@ -28,6 +28,7 @@ const dom = {
   playerCountBadge: $('player-count-badge'),
   observerToggle:   $('observer-toggle'),
   historyList:      $('history-list'),
+  clearHistoryBtn:  $('clear-history-btn'),
   // Main
   storyInput:          $('story-input'),
   setStoryBtn:         $('set-story-btn'),
@@ -408,6 +409,11 @@ function attachEvents() {
   }
   dom.setStoryBtn.addEventListener('click', sendStory);
   dom.storyInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendStory(); });
+
+  // Clear history
+  dom.clearHistoryBtn.addEventListener('click', () => {
+    if (confirm('Smazat celou historii kol?')) state.socket.emit('clear-history');
+  });
 
   // Observer toggle
   dom.observerToggle.addEventListener('change', () => state.socket.emit('toggle-observer'));

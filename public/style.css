@@ -335,6 +335,25 @@ input[type="text"]::placeholder { color: var(--gray400); }
   align-items: center;
   gap: 6px;
 }
+.btn-clear-history {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--gray200);
+  border-radius: 4px;
+  color: var(--gray400);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.btn-clear-history:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
 .count-badge {
   background: var(--y500);
   color: var(--gray900);

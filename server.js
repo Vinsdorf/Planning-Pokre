@@ -155,6 +155,12 @@ io.on('connection', socket => {
     broadcast();
   });
 
+  // Clear history
+  socket.on('clear-history', () => {
+    room.history = [];
+    broadcast();
+  });
+
   // Disconnect
   socket.on('disconnect', () => {
     const idx = room.players.findIndex(p => p.id === socket.id);
