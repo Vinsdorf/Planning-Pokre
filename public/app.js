@@ -82,11 +82,15 @@ function initSocket() {
     return;
   }
 
-  // WebSocket first for speed; polling as fallback for proxies/firewalls.
-  state.socket = io({ transports: ['websocket', 'polling'], reconnectionDelayMax: 5000 });
+  // Polling first (works everywhere, including proxies/firewalls), then upgrades to WebSocket.
+  state.socket = io({
+    transports: ['polling', 'websocket'],
+    reconnectionDelayMax: 5000,
+    timeout: 10000
+  });
 
   state.socket.on('connect_error', () => {
-    setConnStatus('error', 'Server nedostupný – zkontrolujte že běží node server.js');
+    setConnStatus('connecting', 'Připojování…');
   });
 
   // Fires on initial connect AND after every successful reconnect.
