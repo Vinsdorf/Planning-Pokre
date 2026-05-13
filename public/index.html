@@ -108,13 +108,10 @@
 
         <!-- Story input -->
         <section class="section story-section">
-          <div class="section-header">
-            <span class="section-icon">📝</span>
-            <h2>Příběh / Úkol</h2>
-          </div>
-          <div class="story-input-row">
-            <input id="story-input" type="text" placeholder="Zadejte název aktuálního příběhu nebo úkolu…" maxlength="200" />
-            <button id="set-story-btn" class="btn-yellow">Nastavit</button>
+          <div class="story-row">
+            <span class="story-prefix">📝</span>
+            <input id="story-input" type="text" placeholder="Název úkolu / příběhu…" maxlength="200" />
+            <button id="set-story-btn" class="btn-story-set">Nastavit</button>
           </div>
           <div id="current-story-display" class="current-story hidden"></div>
         </section>
@@ -146,18 +143,6 @@
           </div>
           <div id="results-votes-grid" class="results-votes-grid"></div>
           <div class="stats-bar">
-            <div class="stat-chip">
-              <span class="stat-label">Průměr</span>
-              <span id="stat-avg" class="stat-val">–</span>
-            </div>
-            <div class="stat-chip">
-              <span class="stat-label">Nejčastější</span>
-              <span id="stat-mode" class="stat-val">–</span>
-            </div>
-            <div class="stat-chip">
-              <span class="stat-label">Rozsah</span>
-              <span id="stat-range" class="stat-val">–</span>
-            </div>
             <div class="stat-chip" id="consensus-chip">
               <span class="stat-label">Shoda</span>
               <span id="stat-consensus" class="stat-val">–</span>
@@ -166,7 +151,7 @@
 
           <!-- Final estimate picker (shown on disagreement) -->
           <div id="final-estimate-section" class="final-estimate-section hidden">
-            <div class="final-estimate-label">⚠️ Neshoda – vyberte finální odhad týmu:</div>
+            <div class="final-estimate-label">Tým se neshodl<strong>Tip na výsledný odhad</strong></div>
             <div id="final-estimate-cards" class="final-estimate-cards"></div>
           </div>
         </section>

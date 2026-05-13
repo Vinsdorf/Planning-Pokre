@@ -40,9 +40,6 @@ const dom = {
   observerHint:        $('observer-hint'),
   resultsSection:      $('results-section'),
   resultsVotesGrid:    $('results-votes-grid'),
-  statAvg:             $('stat-avg'),
-  statMode:            $('stat-mode'),
-  statRange:           $('stat-range'),
   statConsensus:       $('stat-consensus'),
   consensusChip:          $('consensus-chip'),
   resetBtn:               $('reset-btn'),
@@ -298,25 +295,27 @@ function renderResults(room) {
   });
 
   const nums = room.players
-    .filter(p => !p.isObserver && p.vote !== null && p.vote !== '?' && p.vote !== '☕')
+    .filter(p => !p.isObserver && p.vote !== null)
     .map(p => Number(p.vote));
 
   if (!nums.length) {
-    dom.statAvg.textContent = dom.statMode.textContent = dom.statRange.textContent = dom.statConsensus.textContent = '–';
+    dom.statConsensus.textContent = '–';
     dom.consensusChip.className = 'stat-chip';
     return;
   }
-  const avg = (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(1);
-  const min = Math.min(...nums), max = Math.max(...nums);
-  const freq = nums.reduce((acc, v) => { acc[v] = (acc[v] || 0) + 1; return acc; }, {});
-  const mode = Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
   const consensus = nums.every(v => v === nums[0]);
-
-  dom.statAvg.textContent = avg;
-  dom.statMode.textContent = mode;
-  dom.statRange.textContent = min === max ? `${min}` : `${min} – ${max}`;
   dom.statConsensus.textContent = consensus ? '✓ Shoda!' : '✗ Neshoda';
   dom.consensusChip.className = `stat-chip ${consensus ? 'consensus-yes' : 'consensus-no'}`;
+}
+
+function smartFibRange(nums) {
+  const min = Math.min(...nums);
+  const max = Math.max(...nums);
+  const fibs = FIBONACCI_CARDS.map(Number);
+  const minIdx = fibs.findIndex(f => f >= min);
+  const maxIdx = fibs.findIndex(f => f >= max);
+  const endIdx = Math.min(maxIdx + 1, fibs.length - 1);
+  return FIBONACCI_CARDS.slice(minIdx < 0 ? 0 : minIdx, endIdx + 1);
 }
 
 function renderFinalEstimate(room) {
@@ -335,7 +334,7 @@ function renderFinalEstimate(room) {
 
   dom.finalEstimateSection.classList.remove('hidden');
   dom.finalEstimateCards.innerHTML = '';
-  FIBONACCI_CARDS.forEach(val => {
+  smartFibRange(nums).forEach(val => {
     const btn = document.createElement('button');
     btn.className = 'final-estimate-card';
     btn.textContent = val;
