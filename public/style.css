@@ -507,7 +507,15 @@ input[type="text"]::placeholder { color: var(--gray400); }
   font-weight: 700;
   color: var(--y700);
 }
-.history-consensus-ok  { color: var(--green); font-weight: 600; }
+.history-consensus-ok {
+  font-weight: 700;
+  color: var(--green);
+  background: var(--green-bg);
+  border: 1.5px solid var(--green);
+  padding: 1px 8px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+}
 .history-consensus-no  { color: var(--gray500); }
 .empty-hint { font-size: 0.8rem; color: var(--gray400); font-style: italic; text-align: center; padding: 8px 0; }
 
