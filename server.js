@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -14,13 +15,33 @@ const io = new Server(server, {
 app.use(express.static(path.join(__dirname, 'public')));
 
 const FIBONACCI_VALUES = ['1', '2', '3', '5', '8', '13'];
+const STATE_FILE = path.join(__dirname, 'room-state.json');
+
+// ── Persistence ───────────────────────────────────────────────────────────────
+function loadState() {
+  try {
+    const raw = fs.readFileSync(STATE_FILE, 'utf8');
+    const saved = JSON.parse(raw);
+    if (Array.isArray(saved.history)) return saved;
+  } catch (_) {}
+  return null;
+}
+
+let saveTimer = null;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    fs.writeFile(STATE_FILE, JSON.stringify({ history: room.history }), () => {});
+  }, 500);
+}
 
 // ── Single global game room ───────────────────────────────────────────────────
+const saved = loadState();
 const room = {
   story: '',
-  phase: 'voting',   // 'voting' | 'revealed'
+  phase: 'voting',
   players: [],
-  history: [],
+  history: saved?.history ?? [],
   finalEstimate: null
 };
 
@@ -60,6 +81,7 @@ function triggerReveal() {
       finalEstimate: null,
       time: new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
     });
+    scheduleSave();
   }
   broadcast();
 }
@@ -144,6 +166,7 @@ io.on('connection', socket => {
     room.finalEstimate = String(estimate);
     if (room.history.length > 0) {
       room.history[room.history.length - 1].finalEstimate = room.finalEstimate;
+      scheduleSave();
     }
     broadcast();
   });
@@ -193,6 +216,7 @@ io.on('connection', socket => {
   // Clear history
   socket.on('clear-history', () => {
     room.history = [];
+    scheduleSave();
     broadcast();
   });
 
