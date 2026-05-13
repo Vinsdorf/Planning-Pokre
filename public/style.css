@@ -536,7 +536,11 @@ input[type="text"]::placeholder { color: var(--gray400); }
 .section-header h2 { font-size: 1rem; font-weight: 700; color: var(--gray800); }
 
 /* Story section */
-.story-section { padding: 10px 20px 8px; }
+.story-section {
+  background: transparent;
+  border: none;
+  padding: 10px 20px 8px;
+}
 .story-row {
   display: flex;
   align-items: center;
