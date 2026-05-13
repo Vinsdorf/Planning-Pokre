@@ -11,6 +11,7 @@
   --y300: #FFF176;
   --y400: #FFEE58;
   --y500: #FFD600;   /* primary yellow */
+  --brand: #FECB05; /* logo yellow – used for header & landing */
   --y600: #F9A825;
   --y700: #F57F17;
 
@@ -78,6 +79,7 @@ ul { list-style: none; }
 }
 .landing-overlay.hidden { display: none; }
 
+/* Landing card: logo area + form as one unified card */
 .landing-wrap {
   width: 100%;
   max-width: 380px;
@@ -86,17 +88,25 @@ ul { list-style: none; }
   align-items: center;
   gap: 16px;
 }
+.landing-card {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 40px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08);
+  overflow: hidden;
+}
 
 .landing-logo {
+  background: var(--brand);
   text-align: center;
+  padding: 28px 24px 20px;
 }
 .logo-icon {
   display: block;
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 8px;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 10px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 12px rgba(255,214,0,.5));
+  /* no drop-shadow needed – logo bg matches panel bg */
 }
 .landing-logo h1 {
   font-size: 1.5rem;
@@ -105,7 +115,7 @@ ul { list-style: none; }
   letter-spacing: -0.5px;
 }
 .tagline {
-  color: var(--gray500);
+  color: rgba(0,0,0,.5);
   font-size: 0.85rem;
   margin-top: 2px;
 }
@@ -114,9 +124,9 @@ ul { list-style: none; }
   width: 100%;
   background: var(--white);
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   padding: 22px 22px;
-  box-shadow: 0 6px 32px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.06);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -264,7 +274,7 @@ input[type="text"]::placeholder { color: var(--gray400); }
 /* Header */
 .game-header {
   height: var(--header-h);
-  background: var(--y500);
+  background: var(--brand);
   border-bottom: none;
   display: flex;
   align-items: center;
@@ -273,7 +283,7 @@ input[type="text"]::placeholder { color: var(--gray400); }
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 4px 20px rgba(255,214,0,.4), 0 1px 4px rgba(0,0,0,.08);
+  box-shadow: 0 4px 20px rgba(254,203,5,.45), 0 1px 4px rgba(0,0,0,.08);
 }
 .header-logo {
   font-size: 1.1rem;

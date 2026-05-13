@@ -11,41 +11,44 @@
   <!-- ─── LANDING overlay (over game) ────────────────────────────────────── -->
   <div id="screen-landing" class="landing-overlay">
     <div class="landing-wrap">
-      <div class="landing-logo">
-        <img src="logo-poker.png" alt="Planning Poker logo" class="logo-icon" />
-        <h1>Planning Poker</h1>
-        <p class="tagline">Agilní plánování pro váš tým</p>
-      </div>
-
-      <div class="panel">
-        <div class="form-group">
-          <label for="player-name">Vaše jméno</label>
-          <input id="player-name" type="text" placeholder="Např. Jan Novák" maxlength="30" autocomplete="off" />
+      <!-- unified card: yellow logo area + white form -->
+      <div class="landing-card">
+        <div class="landing-logo">
+          <img src="logo-poker.png" alt="Planning Poker logo" class="logo-icon" />
+          <h1>Planning Poker</h1>
+          <p class="tagline">Agilní plánování pro váš tým</p>
         </div>
 
-        <div class="role-selector">
-          <label class="role-option" id="role-player">
-            <input type="radio" name="role" value="player" checked />
-            <span class="role-card">
-              <span class="role-icon">🎮</span>
-              <strong>Hráč</strong>
-              <small>Hlasujete kartami</small>
-            </span>
-          </label>
-          <label class="role-option" id="role-observer">
-            <input type="radio" name="role" value="observer" />
-            <span class="role-card">
-              <span class="role-icon">👁</span>
-              <strong>Pozorovatel</strong>
-              <small>Vidíte výsledky</small>
-            </span>
-          </label>
-        </div>
+        <div class="panel">
+          <div class="form-group">
+            <label for="player-name">Vaše jméno</label>
+            <input id="player-name" type="text" placeholder="Např. Jan Novák" maxlength="30" autocomplete="off" />
+          </div>
 
-        <div id="conn-status" class="conn-status conn-connecting">
-          <span class="conn-dot"></span><span id="conn-text">Připojování k serveru…</span>
+          <div class="role-selector">
+            <label class="role-option" id="role-player">
+              <input type="radio" name="role" value="player" checked />
+              <span class="role-card">
+                <span class="role-icon">🎮</span>
+                <strong>Hráč</strong>
+                <small>Hlasujete kartami</small>
+              </span>
+            </label>
+            <label class="role-option" id="role-observer">
+              <input type="radio" name="role" value="observer" />
+              <span class="role-card">
+                <span class="role-icon">👁</span>
+                <strong>Pozorovatel</strong>
+                <small>Vidíte výsledky</small>
+              </span>
+            </label>
+          </div>
+
+          <div id="conn-status" class="conn-status conn-connecting">
+            <span class="conn-dot"></span><span id="conn-text">Připojování k serveru…</span>
+          </div>
+          <button id="join-btn" class="btn-primary btn-full" disabled>Vstoupit do hry</button>
         </div>
-        <button id="join-btn" class="btn-primary btn-full" disabled>Vstoupit do hry</button>
       </div>
 
       <p class="landing-footer">Fibonacci bodování · Až 20 hráčů · Sdílejte odkaz z prohlížeče</p>
