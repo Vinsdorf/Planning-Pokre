@@ -927,10 +927,11 @@ input[type="text"]::placeholder { color: var(--gray400); }
 }
 .history-final {
   font-weight: 700;
-  color: var(--y700);
-  background: var(--y100);
-  padding: 1px 7px;
-  border-radius: 4px;
+  color: var(--green);
+  background: var(--green-bg);
+  border: 1.5px solid var(--green);
+  padding: 1px 8px;
+  border-radius: 5px;
   font-size: 0.8rem;
 }
 
