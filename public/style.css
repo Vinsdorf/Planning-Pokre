@@ -527,16 +527,17 @@ input[type="text"]::placeholder { color: var(--gray400); }
   font-weight: 700;
   color: var(--y700);
 }
-.history-consensus-ok {
+.history-meta .history-consensus-ok {
+  display: inline-block;
   font-weight: 700;
-  color: var(--green);
+  color: var(--green) !important;
   background: var(--green-bg);
   border: 1.5px solid var(--green);
   padding: 1px 8px;
   border-radius: 5px;
   font-size: 0.8rem;
 }
-.history-consensus-no  { color: var(--gray500); }
+.history-meta .history-consensus-no { color: var(--gray500); }
 .empty-hint { font-size: 0.8rem; color: var(--gray400); font-style: italic; text-align: center; padding: 8px 0; }
 
 /* ─── Right sidebar – chat ───────────────────────────────────────────────── */
@@ -978,6 +979,7 @@ input[type="text"]::placeholder { color: var(--gray400); }
   opacity: 0.3;
 }
 .history-final {
+  display: inline-block;
   font-weight: 700;
   color: var(--green);
   background: var(--green-bg);
