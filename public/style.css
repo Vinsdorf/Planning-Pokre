@@ -545,7 +545,7 @@ input[type="text"]::placeholder { color: var(--gray400); }
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 520px;
+  max-width: 380px;
   margin: 0 auto;
 }
 .story-prefix { font-size: 1rem; flex-shrink: 0; }
@@ -570,7 +570,8 @@ input[type="text"]::placeholder { color: var(--gray400); }
 }
 .btn-story-set:hover { background: var(--y600); transform: translateY(-1px); }
 .current-story {
-  margin-top: 10px;
+  max-width: 380px;
+  margin: 8px auto 0;
   padding: 9px 14px;
   background: var(--y50);
   border: 1.5px solid var(--y300);
