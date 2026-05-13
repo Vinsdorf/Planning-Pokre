@@ -179,6 +179,17 @@ io.on('connection', socket => {
     else broadcast();
   });
 
+  // Chat
+  socket.on('chat-message', ({ text }) => {
+    const p = room.players.find(p => p.id === socket.id);
+    if (!p || !text?.trim()) return;
+    io.emit('chat-message', {
+      name: p.name,
+      text: text.trim().slice(0, 300),
+      time: new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
+    });
+  });
+
   // Clear history
   socket.on('clear-history', () => {
     room.history = [];

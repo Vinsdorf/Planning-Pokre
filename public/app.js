@@ -46,6 +46,10 @@ const dom = {
   finalEstimateSection:   $('final-estimate-section'),
   finalEstimateCards:     $('final-estimate-cards'),
   toast:               $('toast'),
+  // Chat
+  chatMessages:  $('chat-messages'),
+  chatInput:     $('chat-input'),
+  chatSendBtn:   $('chat-send-btn'),
 };
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -135,6 +139,10 @@ function initSocket() {
     }
   });
 
+  state.socket.on('chat-message', ({ name, text, time }) => {
+    appendChatMessage(name, text, time);
+  });
+
   // Don't show an error immediately – Socket.io reconnects automatically.
   // Only show a hint after 3 s if still trying.
   state.socket.on('disconnect', reason => {
@@ -145,6 +153,26 @@ function initSocket() {
     }
     reconnectToastTimer = setTimeout(() => showToast('Obnovuji spojení…'), 3000);
   });
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+function appendChatMessage(name, text, time) {
+  const mine = name === state.myName;
+  const wrap = document.createElement('div');
+  wrap.className = `chat-msg ${mine ? 'chat-msg-mine' : 'chat-msg-other'}`;
+
+  const meta = document.createElement('div');
+  meta.className = 'chat-msg-meta';
+  meta.textContent = mine ? time : `${name} · ${time}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-msg-bubble';
+  bubble.textContent = text;
+
+  wrap.appendChild(meta);
+  wrap.appendChild(bubble);
+  dom.chatMessages.appendChild(wrap);
+  dom.chatMessages.scrollTop = dom.chatMessages.scrollHeight;
 }
 
 // ── Cards ─────────────────────────────────────────────────────────────────────
@@ -447,6 +475,16 @@ function attachEvents() {
 
   // Observer toggle
   dom.observerToggle.addEventListener('change', () => state.socket.emit('toggle-observer'));
+
+  // Chat
+  function sendChat() {
+    const text = dom.chatInput.value.trim();
+    if (!text || !state.socket?.connected) return;
+    state.socket.emit('chat-message', { text });
+    dom.chatInput.value = '';
+  }
+  dom.chatSendBtn.addEventListener('click', sendChat);
+  dom.chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
 
   // Game actions
   dom.resetBtn.addEventListener('click', () => {
