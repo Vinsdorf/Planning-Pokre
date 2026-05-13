@@ -44,9 +44,10 @@ const dom = {
   statMode:            $('stat-mode'),
   statRange:           $('stat-range'),
   statConsensus:       $('stat-consensus'),
-  consensusChip:       $('consensus-chip'),
-  revealBtn:           $('reveal-btn'),
-  resetBtn:            $('reset-btn'),
+  consensusChip:          $('consensus-chip'),
+  resetBtn:               $('reset-btn'),
+  finalEstimateSection:   $('final-estimate-section'),
+  finalEstimateCards:     $('final-estimate-cards'),
   toast:               $('toast'),
 };
 
@@ -188,6 +189,7 @@ function renderAll(room) {
   renderStatus(room);
   renderCards(room);
   renderResults(room);
+  renderFinalEstimate(room);
   renderHistory(room);
   renderStory(room);
   renderActionButtons(room);
@@ -317,6 +319,36 @@ function renderResults(room) {
   dom.consensusChip.className = `stat-chip ${consensus ? 'consensus-yes' : 'consensus-no'}`;
 }
 
+function renderFinalEstimate(room) {
+  if (room.phase !== 'revealed') {
+    dom.finalEstimateSection.classList.add('hidden');
+    return;
+  }
+  const nums = room.players
+    .filter(p => !p.isObserver && p.vote !== null)
+    .map(p => Number(p.vote));
+  const hasConsensus = nums.length > 0 && nums.every(v => v === nums[0]);
+  if (hasConsensus || nums.length === 0) {
+    dom.finalEstimateSection.classList.add('hidden');
+    return;
+  }
+
+  dom.finalEstimateSection.classList.remove('hidden');
+  dom.finalEstimateCards.innerHTML = '';
+  FIBONACCI_CARDS.forEach(val => {
+    const btn = document.createElement('button');
+    btn.className = 'final-estimate-card';
+    btn.textContent = val;
+    if (room.finalEstimate === val) btn.classList.add('selected');
+    if (room.finalEstimate) btn.classList.add('locked');
+    btn.addEventListener('click', () => {
+      if (room.finalEstimate) return;
+      state.socket.emit('set-final-estimate', { estimate: val });
+    });
+    dom.finalEstimateCards.appendChild(btn);
+  });
+}
+
 function renderHistory(room) {
   if (!room.history?.length) {
     dom.historyList.innerHTML = '<p class="empty-hint">Žádná kola zatím.</p>';
@@ -326,10 +358,14 @@ function renderHistory(room) {
   [...room.history].reverse().forEach(h => {
     const div = document.createElement('div');
     div.className = 'history-item';
+    const finalBadge = h.finalEstimate
+      ? `<span class="history-final">→ ${h.finalEstimate}</span>`
+      : '';
     div.innerHTML = `
       <div class="history-story">${h.story}</div>
       <div class="history-meta">
         <span>Průměr: <span class="history-avg">${h.avg ?? '–'}</span></span>
+        ${finalBadge}
         <span class="${h.consensus ? 'history-consensus-ok' : 'history-consensus-no'}">${h.consensus ? '✓ Shoda' : '≠ Neshoda'}</span>
       </div>
       ${h.time ? `<div class="history-meta" style="color:var(--gray400)">${h.time}</div>` : ''}
@@ -351,12 +387,7 @@ function renderActionButtons(room) {
   const isRevealed = room.phase === 'revealed';
   const me = room.players.find(p => p.id === state.socket.id);
   const isObserver = me?.isObserver ?? state.isObserver;
-  const allVoted = room.players.filter(p => !p.isObserver).length > 0
-    && room.players.filter(p => !p.isObserver).every(p => p.hasVoted);
-
-  dom.revealBtn.classList.toggle('hidden', isRevealed || isObserver);
   dom.resetBtn.classList.toggle('hidden', !isRevealed || isObserver);
-  dom.revealBtn.classList.toggle('pulse', allVoted && !isRevealed);
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
@@ -419,7 +450,6 @@ function attachEvents() {
   dom.observerToggle.addEventListener('change', () => state.socket.emit('toggle-observer'));
 
   // Game actions
-  dom.revealBtn.addEventListener('click', () => state.socket.emit('reveal-votes'));
   dom.resetBtn.addEventListener('click', () => {
     state.selectedVote = null;
     highlightCard(null);

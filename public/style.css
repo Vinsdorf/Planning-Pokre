@@ -742,6 +742,63 @@ input[type="text"]::placeholder { color: var(--gray400); }
 #consensus-chip.consensus-no  { background: var(--red-bg); border-color: var(--red); }
 #consensus-chip.consensus-no .stat-val  { color: var(--red); }
 
+/* ─── Final estimate picker ──────────────────────────────────────────────── */
+.final-estimate-section {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: var(--y50);
+  border: 1.5px dashed var(--y500);
+  border-radius: 10px;
+}
+.final-estimate-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gray700);
+  margin-bottom: 10px;
+}
+.final-estimate-cards {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.final-estimate-card {
+  width: 48px;
+  height: 58px;
+  border: 2px solid var(--gray300);
+  border-radius: 8px;
+  background: var(--white);
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  color: var(--gray800);
+  transition: transform .15s, border-color .15s, background .15s, box-shadow .15s;
+}
+.final-estimate-card:hover:not(.locked) {
+  border-color: var(--y500);
+  background: var(--y100);
+  transform: translateY(-3px);
+}
+.final-estimate-card.selected {
+  border-color: var(--y600);
+  background: var(--y500);
+  color: var(--gray900);
+  transform: translateY(-4px);
+  box-shadow: 0 4px 14px rgba(249,168,37,.4);
+  opacity: 1 !important;
+}
+.final-estimate-card.locked {
+  cursor: default;
+  opacity: 0.35;
+}
+.history-final {
+  font-weight: 700;
+  color: var(--y700);
+  background: var(--y100);
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
 /* ─── Action buttons ─────────────────────────────────────────────────────── */
 .actions-section {
   display: flex;

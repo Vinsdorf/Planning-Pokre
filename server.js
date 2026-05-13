@@ -13,18 +13,22 @@ const io = new Server(server, {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+const FIBONACCI_VALUES = ['1', '2', '3', '5', '8', '13'];
+
 // ── Single global game room ───────────────────────────────────────────────────
 const room = {
   story: '',
   phase: 'voting',   // 'voting' | 'revealed'
   players: [],
-  history: []
+  history: [],
+  finalEstimate: null
 };
 
 function serialize() {
   return {
     story: room.story,
     phase: room.phase,
+    finalEstimate: room.finalEstimate,
     players: room.players.map(p => ({
       id: p.id,
       name: p.name,
@@ -38,6 +42,35 @@ function serialize() {
 
 function broadcast() {
   io.emit('room-state', serialize());
+}
+
+function triggerReveal() {
+  room.phase = 'revealed';
+  room.finalEstimate = null;
+  const stats = calcStats();
+  if (stats) {
+    room.history.push({
+      id: Date.now(),
+      story: room.story || '(bez názvu)',
+      avg: stats.avg,
+      min: stats.min,
+      max: stats.max,
+      mode: stats.mode,
+      consensus: stats.consensus,
+      finalEstimate: null,
+      time: new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
+    });
+  }
+  broadcast();
+}
+
+function checkAutoReveal() {
+  const voters = room.players.filter(p => !p.isObserver);
+  if (voters.length > 0 && voters.every(p => p.vote !== null)) {
+    triggerReveal();
+    return true;
+  }
+  return false;
 }
 
 function calcStats() {
@@ -85,13 +118,13 @@ io.on('connection', socket => {
     broadcast();
   });
 
-  // Vote
+  // Vote – auto-reveals when all non-observers have voted
   socket.on('vote', ({ vote }) => {
     if (room.phase !== 'voting') return;
     const p = room.players.find(p => p.id === socket.id);
     if (!p || p.isObserver) return;
     p.vote = vote;
-    broadcast();
+    if (!checkAutoReveal()) broadcast();
   });
 
   // Clear own vote
@@ -103,25 +136,14 @@ io.on('connection', socket => {
     broadcast();
   });
 
-  // Reveal votes (any non-observer)
-  socket.on('reveal-votes', () => {
-    if (room.phase === 'revealed') return;
-    const p = room.players.find(p => p.id === socket.id);
-    if (!p || p.isObserver) return;
-
-    room.phase = 'revealed';
-    const stats = calcStats();
-    if (stats) {
-      room.history.push({
-        id: Date.now(),
-        story: room.story || '(bez názvu)',
-        avg: stats.avg,
-        min: stats.min,
-        max: stats.max,
-        mode: stats.mode,
-        consensus: stats.consensus,
-        time: new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
-      });
+  // Set final estimate after disagreement (any connected player)
+  socket.on('set-final-estimate', ({ estimate }) => {
+    if (room.phase !== 'revealed') return;
+    if (room.finalEstimate) return; // first click wins
+    if (!FIBONACCI_VALUES.includes(String(estimate))) return;
+    room.finalEstimate = String(estimate);
+    if (room.history.length > 0) {
+      room.history[room.history.length - 1].finalEstimate = room.finalEstimate;
     }
     broadcast();
   });
@@ -132,6 +154,7 @@ io.on('connection', socket => {
     if (!p || p.isObserver) return;
     room.phase = 'voting';
     room.story = '';
+    room.finalEstimate = null;
     room.players.forEach(p => { p.vote = null; });
     broadcast();
   });
@@ -152,7 +175,8 @@ io.on('connection', socket => {
     p.isObserver = !p.isObserver;
     p.vote = null;
     socket.emit('observer-toggled', { isObserver: p.isObserver });
-    broadcast();
+    if (room.phase === 'voting' && !checkAutoReveal()) broadcast();
+    else broadcast();
   });
 
   // Clear history
