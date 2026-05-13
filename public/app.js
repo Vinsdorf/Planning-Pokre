@@ -139,7 +139,8 @@ function initSocket() {
     }
   });
 
-  state.socket.on('chat-message', ({ name, text, time }) => {
+  state.socket.on('chat-message', ({ name, text, ts }) => {
+    const time = new Date(ts).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
     appendChatMessage(name, text, time);
   });
 
@@ -395,7 +396,7 @@ function renderHistory(room) {
         ${finalBadge}
         <span class="${h.consensus ? 'history-consensus-ok' : 'history-consensus-no'}">${h.consensus ? '✓ Shoda' : '≠ Neshoda'}</span>
       </div>
-      ${h.time ? `<div class="history-meta" style="color:var(--gray400)">${h.time}</div>` : ''}
+      ${(h.ts || h.time) ? `<div class="history-meta" style="color:var(--gray400)">${h.ts ? new Date(h.ts).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : h.time}</div>` : ''}
     `;
     dom.historyList.appendChild(div);
   });
@@ -405,7 +406,7 @@ function renderStory(room) {
   const has = room.story?.trim().length > 0;
   dom.currentStoryDisplay.classList.toggle('hidden', !has);
   if (has) {
-    dom.currentStoryDisplay.textContent = `📋 ${room.story}`;
+    dom.currentStoryDisplay.textContent = room.story;
     dom.storyInput.value = room.story;
   }
 }

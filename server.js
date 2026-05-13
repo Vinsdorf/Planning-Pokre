@@ -79,7 +79,7 @@ function triggerReveal() {
       mode: stats.mode,
       consensus: stats.consensus,
       finalEstimate: null,
-      time: new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
+      ts: Date.now()
     });
     scheduleSave();
   }
@@ -209,7 +209,7 @@ io.on('connection', socket => {
     io.emit('chat-message', {
       name: p.name,
       text: text.trim().slice(0, 300),
-      time: new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
+      ts: Date.now()
     });
   });
 
